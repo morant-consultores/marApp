@@ -10,6 +10,7 @@
 mod_comparacion_ui <- function(id){
   ns <- NS(id)
   tagList(
+    actionBttn(inputId = ns("borrar"), "Reiniciar todo"),
     shinyjs::hidden(
       div(id = ns("nada"),
           bs4Quote("Nada por clasificar", color = "info")
@@ -98,7 +99,7 @@ mod_comparacion_ui <- function(id){
 #' comparacion Server Functions
 #'
 #' @noRd
-mod_comparacion_server <- function(id, bd){
+mod_comparacion_server <- function(id, bd, usuario){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
 
@@ -132,8 +133,10 @@ mod_comparacion_server <- function(id, bd){
 
     contador <- reactiveVal(1)
 
-    por_clasificar <- eventReactive(contador(),{
-      aux <- bd$combinaciones %>% slice(contador()) %>% select(id_combinacion, id_actor_1, id_actor_2) %>%
+    por_clasificar <- eventReactive(bd$combinaciones,{
+      aux <- bd$combinaciones %>%
+        # slice(contador()) %>%
+        select(id_combinacion, id_actor_1, id_actor_2) %>%
         left_join(bd$actores %>%
                     transmute(id_actor_1 = id_actor,
                               nombre_1 = nombre,
@@ -146,19 +149,23 @@ mod_comparacion_server <- function(id, bd){
       return(aux)
     })
 
+    renglon <- eventReactive(c(contador(), por_clasificar()),{
+      por_clasificar() %>% slice(contador())
+    })
+
     observeEvent(input$siguiente,{
 
       if((input$ele_actor_1 + input$ele_actor_2 == 0) | is.null(input$relacion)){
         shinyalert::shinyalert("¡Atención!", "Favor de contestar ambas preguntas", type = "warning")
       } else{
         #guardar resultado
-        por_clasificar() %>% select(starts_with("id_")) %>%
-          mutate(id_actor_mas_influyente = if_else(input$ele_actor_1, por_clasificar()$id_actor_1, por_clasificar()$id_actor_2),
+        renglon() %>% select(starts_with("id_")) %>%
+          mutate(id_actor_mas_influyente = if_else(input$ele_actor_1, renglon()$id_actor_1, renglon()$id_actor_2),
                  relacion = input$relacion, creado = lubridate::now(tz = "America/Mexico_City")) %>%
           DBI::dbWriteTable(pool, tbl_comparaciones, value = .,append = T)
 
         #quitar de la cola
-        DBI::dbExecute(pool, glue::glue("UPDATE {tbl_combinaciones} set comparada = '1' WHERE id_combinacion = '{por_clasificar()$id_combinacion}'"))
+        DBI::dbExecute(pool, glue::glue("UPDATE {tbl_combinaciones} set comparada = '1' WHERE id_combinacion = '{renglon()$id_combinacion}'"))
 
         updatePrettyCheckbox(inputId = "ele_actor_1",value = F)
         updatePrettyCheckbox(inputId = "ele_actor_2",value = F)
@@ -169,21 +176,21 @@ mod_comparacion_server <- function(id, bd){
 
     })
 
-    observeEvent(por_clasificar(),{
+    observeEvent(renglon(),{
       # tmp_1 <- tempfile(fileext = ".jpeg")
-      # googledrive::drive_download(file = por_clasificar()$foto_1, tmp_1 )
+      # googledrive::drive_download(file = renglon()$foto_1, tmp_1 )
       # tmp_2 <- tempfile(fileext = ".jpeg")
-      # googledrive::drive_download(file = por_clasificar()$foto_2, tmp_2)
+      # googledrive::drive_download(file = renglon()$foto_2, tmp_2)
 
       updateBox(id = "actor_1",action = "update",
                 options = list(title = userDescription(
-                  title = por_clasificar()$nombre_1, subtitle = por_clasificar()$apellidos_1,
+                  title = renglon()$nombre_1, subtitle = renglon()$apellidos_1,
                   image = "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg"
                 )))
 
       updateBox(id = "actor_2",action = "update",
                 options = list(title = userDescription(
-                  title = por_clasificar()$nombre_2, subtitle = por_clasificar()$apellidos_2,
+                  title = renglon()$nombre_2, subtitle = renglon()$apellidos_2,
                   image = "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg"
                 )))
 
@@ -193,6 +200,23 @@ mod_comparacion_server <- function(id, bd){
     observeEvent(contador(),{
       shinyjs::toggle(id = "formulario", condition = contador() <= nrow(por_clasificar()))
       shinyjs::toggle(id = "nada", condition = contador() > nrow(por_clasificar()))
+    })
+
+    observeEvent(input$borrar,{
+      glue::glue("UPDATE {tbl_combinaciones} set comparada = '0'") %>% DBI::dbExecute(pool,.)
+      DBI::dbRemoveTable(pool, "mar_comparaciones")
+      DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (
+  id_comparacion INT AUTO_INCREMENT PRIMARY KEY,
+  id_combinacion INT,
+  id_actor_1 INT,
+  id_actor_2 INT,
+  id_actor_mas_influyente INT,
+  relacion VARCHAR(20),
+  creado DATETIME
+);" )
+
+      bd$combinaciones <- tbl(pool, tbl_combinaciones) %>% filter(id_usuario == !!usuario, comparada == 0) %>% collect()
+      contador(1)
     })
   })
 }

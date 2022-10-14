@@ -14,5 +14,5 @@ app_server <- function(input, output, session) {
                  # comparaciones = tbl(pool, tbl_comparaciones) %>% collect()
                  )
 
-  mod_comparacion_server("comparacion_1", bd = bd)
+  mod_comparacion_server("comparacion_1", bd = bd, usuario = usuario)
 }

@@ -70,6 +70,15 @@ DBI::dbExecute(pool, "CREATE TABLE mar_actores (
 #   mutate(activo = 1) %>%
 #   DBI::dbWriteTable(conn = pool, name = "mar_actores", append = T)
 
+#prueba
+# tibble(a = 1:20) %>% mutate(id_usuario = 1,
+#                             nombre = glue::glue("Nombre {a}"),
+#                             apellido_paterno = glue::glue("Apellido paterno {a}"),
+#                             apellido_materno = glue::glue("Apellido materno {a}"),
+#                             activo = 1) %>%
+#   select(-a) %>%
+#   DBI::dbWriteTable(conn = pool, name = "mar_actores", append = T)
+
 # combinaciones -----------------------------------------------------------
 # DBI::dbRemoveTable(pool, "mar_combinaciones")
 DBI::dbExecute(pool, "CREATE TABLE mar_combinaciones (
@@ -85,15 +94,17 @@ DBI::dbExecute(pool, "CREATE TABLE mar_combinaciones (
 act <- tbl(pool, "mar_actores") %>% collect()
 act %>% group_by(id_usuario) %>% filter(n()>1) %>% ungroup %>%
   split(.$id_usuario) %>% imap(~{
-  combn(.x$id_actor,2) %>% t() %>% as_tibble %>% set_names(c("id_actor_1", "id_actor_2")) %>% mutate(id_usuario = .y)
+  combn(.x$id_actor,2) %>% t() %>% as_tibble %>% set_names(c("id_actor_1", "id_actor_2")) %>%
+      mutate(id_usuario = .y, comparada = 0, creado = now(tz = "America/Mexico_City")) %>%
+    sample_frac() %>% DBI::dbWriteTable(pool, "mar_combinaciones",., append = T)
 })
 
-combn(act$id_actor,2) %>% t() %>% as_tibble %>% purrr::set_names(c("id_actor_1", "id_actor_2")) %>%
-  mutate(id_usuario = 1, comparada = 0, creado = now(tz = "America/Mexico_City")) %>%
-  DBI::dbWriteTable(pool, "mar_combinaciones",., append = T)
+# combn(act$id_actor,2) %>% t() %>% as_tibble %>% purrr::set_names(c("id_actor_1", "id_actor_2")) %>%
+#   mutate(id_usuario = 1, comparada = 0, creado = now(tz = "America/Mexico_City")) %>%
+#   DBI::dbWriteTable(pool, "mar_combinaciones",., append = T)
 tbl(pool, "mar_combinaciones")
 # comparaciones -----------------------------------------------------------
-# DBI::dbRemoveTable(pool, "mar_comparaciones")
+DBI::dbRemoveTable(pool, "mar_comparaciones")
 DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (
   id_comparacion INT AUTO_INCREMENT PRIMARY KEY,
   id_combinacion INT,
