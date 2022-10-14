@@ -10,7 +10,7 @@ app_ui <- function(request) {
     golem_add_external_resources(),
     # Your application UI logic
     dashboardPage(
-      preloader = list(html = tagList(waiter::spin_fill()), color = "#3c8dbc"),
+      preloader = list(html = tagList(waiter::spin_fill(), p("Cargando...")), color = "#3c8dbc"),
       header = dashboardHeader(
         title = dashboardBrand(
           title = "My dashboard",
