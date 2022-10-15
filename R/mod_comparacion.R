@@ -134,6 +134,7 @@ mod_comparacion_server <- function(id, bd, usuario){
     contador <- reactiveVal(1)
 
     por_clasificar <- eventReactive(bd$combinaciones,{
+      req(usuario)
       aux <- bd$combinaciones %>%
         # slice(contador()) %>%
         select(id_combinacion, id_actor_1, id_actor_2) %>%

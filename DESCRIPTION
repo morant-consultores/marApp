@@ -5,6 +5,8 @@ Authors@R:
     person("Emilio", "Morones", , "emiliomorones@gmail.com", role = c("cre", "aut"))
 Description: Compara distintos actores
 License: MIT + file LICENSE
+URL: https://github.com/morant-consultores/marApp
+BugReports: https://github.com/morant-consultores/marApp/issues
 Depends: 
     R (>= 2.10)
 Imports: 
@@ -21,6 +23,7 @@ Imports:
     shiny (>= 1.7.2.9000),
     shinyalert,
     shinyjs,
+    shinymanager,
     shinyWidgets,
     waiter
 Suggests: 
@@ -31,5 +34,3 @@ Encoding: UTF-8
 Language: en-US
 LazyData: true
 RoxygenNote: 7.1.2
-URL: https://github.com/morant-consultores/marApp
-BugReports: https://github.com/morant-consultores/marApp/issues

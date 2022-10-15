@@ -24,7 +24,7 @@ actores <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1KE
 distrito <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/14IWajVLgeeR4KmLYo6_sZKwIvMXtP13JM_SZ_v-jWAY/edit#gid=0") %>% clean_names()
 
 # usuarios ----------------------------------------------------------------
-
+# DBI::dbRemoveTable(pool, "mar_usuarios")
 DBI::dbExecute(pool, "CREATE TABLE mar_usuarios (
   id_usuario INT AUTO_INCREMENT PRIMARY KEY,
   usuario VARCHAR(100),
@@ -38,11 +38,13 @@ DBI::dbExecute(pool, "CREATE TABLE mar_usuarios (
 # set.seed(1991)
 # distrito %>% transmute(usuario = str_replace_all(telefono," ",""),
 #                        nombre = titular,
-#                        contrasena = runif(nrow(.),1000,9999),
+#                        contrasena = round(runif(nrow(.),1000,9999)),
 #                        distrito = readr::parse_number(distrito),
 #                        creado = now(tz = "America/Mexico_City"),
 #                        activo = 1
 # ) %>% DBI::dbWriteTable(pool, "mar_usuarios", ., append = T)
+
+tbl(pool, tbl_usuarios)
 # actores -----------------------------------------------------------------
 # googlesheets4::gs4_auth(email = "emiliomorones@gmail.com")
 

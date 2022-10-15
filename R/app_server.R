@@ -7,12 +7,22 @@
 app_server <- function(input, output, session) {
   # Your application server logic
 
-  usuario <- 1
-  bd <- reactiveValues(usuarios = tbl(pool, tbl_usuarios) %>% filter(activo == 1) %>% collect(),
-                 actores = tbl(pool, tbl_actores) %>% filter(activo == 1) %>% collect(),
-                 combinaciones = tbl(pool, tbl_combinaciones) %>% filter(id_usuario == !!usuario, comparada == 0) %>% collect()
-                 # comparaciones = tbl(pool, tbl_comparaciones) %>% collect()
-                 )
+  res_auth <- shinymanager::secure_server(
+    check_credentials = shinymanager::check_credentials(db = app_sys("app/data/credenciales.sqlite"),
+                                                        passphrase = "morantconsultores")
+  )
 
-  mod_comparacion_server("comparacion_1", bd = bd, usuario = usuario)
+  bd <- reactiveValues(
+    actores = tbl(pool, tbl_actores) %>% filter(activo == 1) %>% collect(),
+    combinaciones = tbl(pool, tbl_combinaciones)
+  )
+
+  observeEvent(res_auth$user,{
+    bd$combinaciones <- bd$combinaciones %>% filter(id_usuario == !!res_auth$user, comparada == 0) %>% collect()
+  })
+
+
+
+
+  mod_comparacion_server("comparacion_1", bd = bd, usuario = res_auth$user)
 }
