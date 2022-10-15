@@ -73,7 +73,7 @@ DBI::dbExecute(pool, "CREATE TABLE mar_actores (
 #   DBI::dbWriteTable(conn = pool, name = "mar_actores", append = T)
 
 #prueba
-# tibble(a = 1:20) %>% mutate(id_usuario = 1,
+# tibble(a = 1:20) %>% mutate(id_usuario = 0,
 #                             nombre = glue::glue("Nombre {a}"),
 #                             apellido_paterno = glue::glue("Apellido paterno {a}"),
 #                             apellido_materno = glue::glue("Apellido materno {a}"),
