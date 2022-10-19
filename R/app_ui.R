@@ -13,16 +13,41 @@ app_ui <- function(request) {
       preloader = list(html = tagList(waiter::spin_fill(), p("Cargando...")), color = "#3c8dbc"),
       header = dashboardHeader(
         title = dashboardBrand(
-          title = "My dashboard",
+          title = "Mapa de actores relevantes",
           color = "primary",
-          href = "https://adminlte.io/themes/v3",
-          image = "https://adminlte.io/themes/v3/dist/img/AdminLTELogo.png"
+          href = NULL,
+          image = NULL#"https://adminlte.io/themes/v3/dist/img/AdminLTELogo.png"
         )
       ),
-      sidebar = dashboardSidebar(),
+      sidebar = dashboardSidebar(
+        sidebarMenu(
+          menuItem("Comparar actores",
+                   tabName = "comparacion",
+                   icon = icon("user-group")
+          ),
+          menuItem("Registrar actor",
+                   tabName = "registrar",
+                   icon = icon("plus")
+          ),
+          menuItem("Mapa de actores relevantes",
+                   tabName = "mapa",
+                   icon = icon("circle-nodes")
+          )
+        )
+      ),
       body = dashboardBody(
         shinyjs::useShinyjs(),
-        mod_comparacion_ui("comparacion_1")
+        tabItems(
+          tabItem(tabName = "comparacion",
+            mod_comparacion_ui("comparacion_1")
+          ),
+          tabItem(tabName = "registrar",
+                  mod_registrar_ui("registrar_1")
+          ),
+          tabItem(tabName = "mapa",
+                  mod_mar_ui("mar_1")
+          )
+        )
       ),
       controlbar = dashboardControlbar(),
       title = "DashboardPage"

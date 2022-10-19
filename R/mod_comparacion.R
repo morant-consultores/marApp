@@ -10,7 +10,7 @@
 mod_comparacion_ui <- function(id){
   ns <- NS(id)
   tagList(
-    actionBttn(inputId = ns("borrar"), "Reiniciar todo"),
+    # actionBttn(inputId = ns("borrar"), "Reiniciar todo"),
     shinyjs::hidden(
       div(id = ns("nada"),
           bs4Quote("Nada por clasificar", color = "info")
@@ -19,7 +19,6 @@ mod_comparacion_ui <- function(id){
       div(id = ns("formulario"),
           tagList(
             bs4Quote("Elija al actor más influyente", color = "info"),
-            # actionButton(ns("update_box"), "Update"),
             fluidRow(
               userBox(
                 id = ns("actor_1"),
@@ -27,12 +26,13 @@ mod_comparacion_ui <- function(id){
                   title = "",
                   subtitle = "",
                   type = 1,
-                  image = "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg",
+                  image = NULL
                 ),
                 status = "info",
                 gradient = TRUE,
                 background = "gray",
                 boxToolSize = "xl",
+                collapsible = F,
                 footer = prettyCheckbox(
                   inputId = ns("ele_actor_1"),
                   label = "Más influyente",
@@ -48,13 +48,14 @@ mod_comparacion_ui <- function(id){
                 title = userDescription(
                   title = "",
                   subtitle = "",
-                  type = 1,
-                  image = "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg",
+                  type = 2,
+                  image = NULL
                 ),
                 status = "info",
                 gradient = TRUE,
                 background = "gray",
                 boxToolSize = "xl",
+                collapsible = F,
                 footer = prettyCheckbox(
                   inputId = ns("ele_actor_2"),
                   label = "Más influyente",
@@ -66,13 +67,16 @@ mod_comparacion_ui <- function(id){
                 )
               )
             ),
+            fluidRow(
+              checkboxInput(ns("empate"), "Mismo nivel de influencia")
+            ),
             hr(),
             bs4Quote("¿Cómo describe su relación?", color = "success"),
             fluidRow(
               radioGroupButtons(
                 inputId = ns("relacion"),
                 label = "",
-                choices = c("Negativa", "Neutral", "Positiva"),
+                choices = c("Ns/Nc","Negativa", "Neutral", "Positiva"),
                 justified = TRUE,
                 selected = "",status = "success",
                 width = "100%",
@@ -89,7 +93,6 @@ mod_comparacion_ui <- function(id){
                 block = T
               )
             )
-
           )
       )
     )
@@ -119,24 +122,36 @@ mod_comparacion_server <- function(id, bd, usuario){
       )
     }, ignoreInit = T)
 
-    observeEvent(c(input$ele_actor_1, input$ele_actor_2),{
-      if(input$ele_actor_1 + input$ele_actor_2 > 1){
-        shinyalert::shinyalert("¡Atención!", "Sólo puede seleccionar un actor", type = "warning",
-                               closeOnEsc = F,closeOnClickOutside = F,
-                               callbackR = function(x){
-                                 updatePrettyCheckbox(inputId = "ele_actor_1",value = F)
-                                 updatePrettyCheckbox(inputId = "ele_actor_2",value = F)
-                               })
-      }
-    })
+    # observeEvent(c(input$ele_actor_1, input$ele_actor_2),{
+    #   if(input$ele_actor_1 + input$ele_actor_2 > 1){
+    #     shinyalert::shinyalert("¡Atención!", "Sólo puede seleccionar un actor", type = "warning",
+    #                            closeOnEsc = F,closeOnClickOutside = F,
+    #                            callbackR = function(x){
+    #                              updatePrettyCheckbox(inputId = "ele_actor_1",value = F)
+    #                              updatePrettyCheckbox(inputId = "ele_actor_2",value = F)
+    #                            })
+    #   }
+    # })
 
+    observeEvent(input$empate,{
+      updatePrettyCheckbox(inputId = "ele_actor_1", value = input$empate)
+      updatePrettyCheckbox(inputId = "ele_actor_2", value = input$empate)
+    },ignoreInit = T)
+#
+#     observeEvent(c(input$ele_actor_1, input$ele_actor_2),{
+#
+#       if((input$ele_actor_1 + input$ele_actor_2) < 2) updateCheckboxInput(inputId = "empate", value = F) else{
+#         updateCheckboxInput(inputId = "empate", value = T)
+#       }
+#
+#     },ignoreInit = T)
 
     contador <- reactiveVal(1)
 
-    por_clasificar <- eventReactive(bd$combinaciones,{
+    por_clasificar <- eventReactive(gargoyle::watch("actualizar_combinaciones"),{
       req(usuario)
+
       aux <- bd$combinaciones %>%
-        # slice(contador()) %>%
         select(id_combinacion, id_actor_1, id_actor_2) %>%
         left_join(bd$actores %>%
                     transmute(id_actor_1 = id_actor,
@@ -147,6 +162,8 @@ mod_comparacion_server <- function(id, bd, usuario){
                     transmute(id_actor_2 = id_actor, nombre_2 = nombre,
                               apellidos_2 = glue::glue("{apellido_paterno} {apellido_materno}"),
                               foto_2 = foto))
+
+      contador(1)
       return(aux)
     })
 
@@ -161,7 +178,8 @@ mod_comparacion_server <- function(id, bd, usuario){
       } else{
         #guardar resultado
         renglon() %>% select(starts_with("id_")) %>%
-          mutate(id_actor_mas_influyente = if_else(input$ele_actor_1, renglon()$id_actor_1, renglon()$id_actor_2),
+          mutate(id_actor_1_mas_influyente = input$ele_actor_1,
+                 id_actor_2_mas_influyente = input$ele_actor_2,
                  relacion = input$relacion, creado = lubridate::now(tz = "America/Mexico_City")) %>%
           DBI::dbWriteTable(pool, tbl_comparaciones, value = .,append = T)
 
@@ -170,6 +188,7 @@ mod_comparacion_server <- function(id, bd, usuario){
 
         updatePrettyCheckbox(inputId = "ele_actor_1",value = F)
         updatePrettyCheckbox(inputId = "ele_actor_2",value = F)
+        updateCheckboxInput(inputId = "empate", value = F)
         updateRadioGroupButtons(inputId = "relacion",selected = character(0))
 
         contador(contador()+ 1)
@@ -178,21 +197,17 @@ mod_comparacion_server <- function(id, bd, usuario){
     })
 
     observeEvent(renglon(),{
-      # tmp_1 <- tempfile(fileext = ".jpeg")
-      # googledrive::drive_download(file = renglon()$foto_1, tmp_1 )
-      # tmp_2 <- tempfile(fileext = ".jpeg")
-      # googledrive::drive_download(file = renglon()$foto_2, tmp_2)
 
       updateBox(id = "actor_1",action = "update",
                 options = list(title = userDescription(
-                  title = renglon()$nombre_1, subtitle = renglon()$apellidos_1,
-                  image = "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg"
+                  title = renglon()$nombre_1, subtitle = renglon()$apellidos_1, type = 2,
+                  image = if_else(!is.na(renglon()$foto_1) & (renglon()$foto_1 != "") & (substr(renglon()$foto_1,nchar(renglon()$foto_1)-3, nchar(renglon()$foto_1)) %in% c(".png",".jpg",".svg")), "http://sitl.diputados.gob.mx/LXV_leg/fotos_lxvconfondo/242_foto_chica.jpg", "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg")
                 )))
 
       updateBox(id = "actor_2",action = "update",
                 options = list(title = userDescription(
-                  title = renglon()$nombre_2, subtitle = renglon()$apellidos_2,
-                  image = "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg"
+                  title = renglon()$nombre_2, subtitle = renglon()$apellidos_2, type = 2,
+                  image = if_else(!is.na(renglon()$foto_2) & (renglon()$foto_2 != "" & (substr(renglon()$foto_2,nchar(renglon()$foto_2)-3, nchar(renglon()$foto_2)) %in% c(".png",".jpg",".svg"))), renglon()$foto_2, "https://upload.wikimedia.org/wikipedia/commons/5/50/User_icon-cp.svg")
                 )))
 
       waiter::waiter_hide()
@@ -216,7 +231,9 @@ mod_comparacion_server <- function(id, bd, usuario){
   creado DATETIME
 );" )
 
-      bd$combinaciones <- tbl(pool, tbl_combinaciones) %>% filter(id_usuario == !!usuario, comparada == 0) %>% collect()
+      bd$combinaciones <- tbl(pool, tbl_combinaciones) %>% left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
+        filter(usuario == !!usuario, comparada == 0) %>% collect()
+
       contador(1)
     })
   })

@@ -21,7 +21,8 @@ attachment::att_amend_desc()
 ## Add modules ----
 ## Create a module infrastructure in R/
 golem::add_module(name = "comparacion", with_test = TRUE) # Name of the module
-golem::add_module(name = "name_of_module2", with_test = TRUE) # Name of the module
+golem::add_module(name = "registrar", with_test = TRUE) # Name of the module
+golem::add_module(name = "mar", with_test = TRUE) # Name of the module
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
@@ -40,6 +41,7 @@ golem::add_sass_file("custom")
 ## If you have data in your package
 usethis::use_data_raw(name = "aws", open = T)
 usethis::use_data_raw(name = "usuarios", open = T)
+usethis::use_data_raw(name = "municipios", open = T)
 
 ## Tests ----
 ## Add one line by test you want to create

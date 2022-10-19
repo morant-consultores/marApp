@@ -23,3 +23,8 @@ tbl_usuarios <- "mar_usuarios"
 tbl_actores <- "mar_actores"
 tbl_combinaciones <- "mar_combinaciones"
 tbl_comparaciones <- "mar_comparaciones"
+
+tbl(pool, tbl_usuarios)
+tbl(pool, tbl_actores)
+tbl(pool, tbl_combinaciones)
+tbl(pool, tbl_comparaciones)
