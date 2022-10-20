@@ -36,7 +36,7 @@ DBI::dbExecute(pool, "CREATE TABLE mar_usuarios (
 );" )
 
 # set.seed(1991)
-# tibble(id_usuario = 0, usuario = "stecnico", contrasena = 1, nombre = "Soporte técnico", distrito = 0, activo = 1, creado = now()) %>%
+# tibble(id_usuario = 0, usuario = "stecnico", contrasena = 1, nombre = "DPP", distrito = 0, activo = 1, creado = now()) %>%
 #   bind_rows(distrito %>% mutate(telefono = as.character(.data$telefono)) %>%
 #               transmute(usuario = str_replace_all(telefono," ",""),
 #                         nombre = titular,
@@ -45,7 +45,7 @@ DBI::dbExecute(pool, "CREATE TABLE mar_usuarios (
 #                         creado = now(tz = "America/Mexico_City"),
 #                         activo = 1
 #               )) %>% DBI::dbWriteTable(pool, "mar_usuarios", ., append = T)
-
+#
 tbl(pool, tbl_usuarios)
 # actores -----------------------------------------------------------------
 # googlesheets4::gs4_auth(email = "emiliomorones@gmail.com")
@@ -63,6 +63,8 @@ DBI::dbExecute(pool, "CREATE TABLE mar_actores (
   zona_de_influencia VARCHAR(100),
   municipio VARCHAR(100),
   partido VARCHAR(50),
+  cargo VARCHAR(50),
+  descripcion VARCHAR(500),
   creado DATETIME,
   activo TINYINT
 );" )
@@ -72,15 +74,19 @@ usu <- tbl(pool, "mar_usuarios") %>% select(id_usuario, nombre) %>% collect()
 actores %>%
   select(-foto) %>%
   mutate(telefono = actores$telefono %>% as.character()) %>%
-  filter(cual_es_tu_nombre != "DPP") %>%
+  # filter(cual_es_tu_nombre != "DPP") %>%
   rename(partido = esta_asociada_a_un_partido_politico,
-         foto = liga_web_de_la_foto) %>%
+         foto = liga_web_de_la_foto,
+         cargo = cargo_u_ocupacion,
+         descripcion = breve_descripcion_de_la_persona_y_de_donde_proviene_su_liderazgo
+         ) %>%
   left_join(usu, by = c("cual_es_tu_nombre" = "nombre")) %>%
   select(-cual_es_tu_nombre) %>%
   rename(creado = marca_temporal) %>%
   mutate(activo = 1) %>%
   DBI::dbWriteTable(conn = pool, name = "mar_actores", append = T)
 
+tbl(pool, tbl_actores) %>% count(id_usuario)
 #prueba
 # tibble(a = 1:20) %>% mutate(id_usuario = 1,
 #                             nombre = glue::glue("Nombre {a}"),
@@ -92,26 +98,44 @@ actores %>%
 
 # combinaciones -----------------------------------------------------------
 # DBI::dbRemoveTable(pool, "mar_combinaciones")
-DBI::dbExecute(pool, "CREATE TABLE mar_combinaciones (
+DBI::dbExecute(pool, glue::glue("CREATE TABLE mar_combinaciones (
   id_combinacion INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT,
   id_actor_1 INT,
   id_actor_2 INT,
   comparada TINYINT,
   creado DATETIME
-);" )
+);" ))
 
 
 act <- tbl(pool, "mar_actores") %>% collect()
-act %>% sample_frac() %>% group_by(id_usuario) %>% filter(n()>1) %>% ungroup %>%
-  split(.$id_usuario) %>% imap(~{
-  combn(.x$id_actor,2) %>% t() %>% as_tibble %>% set_names(c("id_actor_1", "id_actor_2")) %>%
+
+#combinaciones cada distrito
+
+muns <- readr::read_csv("data-raw/catálogo_mpos_dttos.csv")
+usuario <- tbl(pool, tbl_usuarios) %>% collect()
+ids <- usuario %>% select(distrito, id_usuario) %>% inner_join(
+  muns %>% select(municipio = nombre_municipio, distrito = clave_distrito)
+) %>% select(-distrito)
+
+aux <- act %>% filter(id_usuario != 1) %>%
+  bind_rows(
+    act %>% filter(id_usuario == 1, cargo == "Presidente Municipal") %>%
+      select(-id_usuario) %>% left_join(ids)
+  )
+
+aux %>%
+  split(.$id_usuario) %>% purrr::iwalk(~{
+    previo <- .x %>%
+      bind_rows(act %>% filter(id_usuario == 1, cargo != "Presidente Municipal"))
+
+  combn(previo$id_actor,2) %>% t() %>% as_tibble %>% set_names(c("id_actor_1", "id_actor_2")) %>%
       mutate(id_usuario = .y, comparada = 0, creado = now(tz = "America/Mexico_City")) %>%
     sample_frac() %>% DBI::dbWriteTable(pool, "mar_combinaciones",., append = T)
 })
 
+tbl(pool, tbl_combinaciones) %>% count(id_usuario)
 
-tbl(pool, "mar_combinaciones")
 # comparaciones -----------------------------------------------------------
 # DBI::dbRemoveTable(pool, "mar_comparaciones")
 DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (
@@ -124,3 +148,5 @@ DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (
   relacion VARCHAR(20),
   creado DATETIME
 );" )
+
+tbl(pool, tbl_comparaciones)

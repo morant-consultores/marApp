@@ -4,7 +4,8 @@ library(shinymanager)
 credentials <- #tibble(id_usuario = 1, user = "stecnico", password = "1", nombre = "Soporte técnico", admin = T) %>%
   # bind_rows(
     tbl(pool, tbl_usuarios) %>% filter(activo == 1) %>% collect() %>%
-      rename(user = usuario, password = contrasena) %>% mutate(admin = F) %>% select(-activo)
+      rename(user = usuario, password = contrasena) %>% mutate(admin = F) %>% select(-activo) %>%
+  mutate(admin = if_else(id_usuario == 1, T, F))
   # )
 
 shinymanager::create_db(
