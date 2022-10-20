@@ -13,7 +13,7 @@ app_ui <- function(request) {
       preloader = list(html = tagList(waiter::spin_fill(), p("Cargando...")), color = "#3c8dbc"),
       header = dashboardHeader(
         title = dashboardBrand(
-          title = "Mapa de actores relevantes",
+          title = textOutput("usuario"),
           color = "primary",
           href = NULL,
           image = NULL#"https://adminlte.io/themes/v3/dist/img/AdminLTELogo.png"

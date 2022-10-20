@@ -9,6 +9,10 @@ app_server <- function(input, output, session) {
 
   gargoyle::init("actualizar_combinaciones")
 
+  output$usuario <- renderText({
+    res_auth$nombre
+  })
+
   res_auth <- shinymanager::secure_server(
     check_credentials = shinymanager::check_credentials(db = app_sys("app/data/credenciales.sqlite"),
                                                         passphrase = "morantconsultores")
@@ -21,9 +25,12 @@ app_server <- function(input, output, session) {
   )
 
   observeEvent(c(res_auth$user),{
-    bd$combinaciones <- bd$combinaciones %>% left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
-      filter(usuario == !!res_auth$user, comparada == 0) %>% collect()
-
+    if(res_auth$user != "stecnico"){
+      bd$combinaciones <- bd$combinaciones %>% left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
+        filter(usuario == !!res_auth$user)
+    } else{
+      bd$combinaciones <- bd$combinaciones %>% left_join(bd$usuarios %>% select(usuario, id_usuario))
+    }
     gargoyle::trigger("actualizar_combinaciones")
   })
 
