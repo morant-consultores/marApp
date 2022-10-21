@@ -19,16 +19,21 @@ app_server <- function(input, output, session) {
   )
 
   bd <- reactiveValues(
-    actores = tbl(pool, tbl_actores) %>% filter(activo == 1) %>% collect(),
+    actores = tbl(pool, tbl_actores) %>% filter(activo == 1),
     combinaciones = tbl(pool, tbl_combinaciones),
+    comparaciones = tbl(pool, tbl_comparaciones),
     usuarios = tbl(pool, tbl_usuarios)
   )
 
   observeEvent(c(res_auth$user),{
     if(res_auth$user != "stecnico"){
+      bd$actores <- bd$actores %>% left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
+        filter(usuario == !!res_auth$user) %>% collect()
+
       bd$combinaciones <- bd$combinaciones %>% left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
         filter(usuario == !!res_auth$user)
     } else{
+      bd$actores <- bd$actores %>% collect()
       bd$combinaciones <- bd$combinaciones %>% left_join(bd$usuarios %>% select(usuario, id_usuario))
     }
     gargoyle::trigger("actualizar_combinaciones")
@@ -39,4 +44,5 @@ app_server <- function(input, output, session) {
 
   mod_comparacion_server("comparacion_1", bd = bd, usuario = res_auth$user)
   mod_registrar_server("registrar_1", bd = bd, usuario = res_auth$user)
+  mod_mar_server("mar_1", bd = bd)
 }

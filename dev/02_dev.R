@@ -28,6 +28,7 @@ golem::add_module(name = "mar", with_test = TRUE) # Name of the module
 ## Creates fct_* and utils_*
 golem::add_fct("helpers", with_test = TRUE)
 golem::add_fct("pool", with_test = TRUE)
+golem::add_fct("modelo", with_test = F)
 golem::add_utils("helpers", with_test = TRUE)
 
 ## External resources
