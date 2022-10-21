@@ -101,6 +101,12 @@ mod_registrar_server <- function(id, bd, usuario){
                      ((input[[.x]] %>%  stringr::str_squish()) != "") &&
                      (as.character(input[[.x]]) != 0)) %>% all()
 
+      if(input$foto != ""){
+        if(!substr(input$foto,nchar(input$foto)-3, nchar(input$foto)) %in% c(".png",".jpg",".svg","jpeg", "JPEG")){
+          shinyalert::shinyalert(title = "¡Registre link válido!", text = "Debe tener alguna de las siguientes terminaciones: .png, .jpg, .svg, .jpeg o .JPEG")
+        }
+      }
+
       if(mandatory){
         withProgress(message = 'Espere un momento', value = 0, {
           shinyjs::disable(id = "guardar")
