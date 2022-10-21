@@ -45,9 +45,12 @@ mod_mar_server <- function(id, bd){
     })
 
     resumen <- eventReactive(input$correr,{
-
-      estimar_influencia(comparativo = comparaciones(), actores_tb = bd$actores)
-
+      validate(need(
+        nrow(comparaciones()) > 0,message = "Registre comparaciones"
+      ))
+      withProgress(message = 'Espere...', value = .5, {
+        estimar_influencia(comparativo = comparaciones(), actores_tb = bd$actores)
+      })
     })
 
     output$red <- visNetwork::renderVisNetwork({
