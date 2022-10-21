@@ -170,7 +170,11 @@ mod_comparacion_server <- function(id, bd, usuario){
 
     por_clasificar <- eventReactive(gargoyle::watch("actualizar_combinaciones"),{
       req(usuario)
-      combinaciones <- bd$combinaciones %>% filter(comparada <= 0) %>% arrange(desc(comparada)) %>% collect()
+
+      combinaciones <- bd$combinaciones %>% filter(comparada <= 0) %>% collect()
+
+      combinaciones <- combinaciones %>%
+        split(abs(.$comparada)) %>% do.call(rbind,.)
 
       aux <- combinaciones %>%
         select(id_combinacion, id_actor_1, id_actor_2) %>%
