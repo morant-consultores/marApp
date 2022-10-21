@@ -13,9 +13,6 @@ mod_mar_ui <- function(id){
     fluidRow(
       col_6(
         actionButton(inputId = ns("correr"),label =  "Graficar")
-      ),
-      col_6(
-        selectInput(ns("grupos"), "Grupo", choices = c("Seleccione" = ""))
       )
     ),
     fluidRow(
@@ -23,7 +20,13 @@ mod_mar_ui <- function(id){
           visNetwork::visNetworkOutput(ns("red"))
       ),
       box(width = 6,
-          plotOutput(ns("barras"))
+          fluidRow(
+            plotOutput(ns("barras"))
+          ),
+          fluidRow(
+            shinyjs::hidden(actionButton(inputId = ns("siguiente"), "Siguiente"))
+          )
+
       )
     )
   )
@@ -57,12 +60,25 @@ mod_mar_server <- function(id, bd){
 
     observeEvent(barras(),{
       opciones <- names(barras())
-      updateSelectInput(inputId = "grupos",choices = opciones, selected = opciones[[1]])
+      if(length(opciones) > 1){
+        shinyjs::show("siguiente")
+      }
+    })
+
+    pagina <- reactiveVal(1)
+
+    observeEvent(input$siguiente,{
+      pagina(pagina() + 1)
     })
 
     output$barras <- renderPlot({
-      req(input$grupos)
-      barras() %>% purrr::pluck(input$grupos)
+
+      pag <- pagina() %% (length(barras())+1)
+      if(pag == 0) {
+        pagina(pagina() + 1)
+        pag <- pagina() %% (length(barras())+1)
+      }
+      barras() %>% purrr::pluck(pag)
     })
   })
 }
