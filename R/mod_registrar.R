@@ -103,80 +103,153 @@ mod_registrar_server <- function(id, bd, usuario){
 
       if(input$foto != ""){
         if(!substr(input$foto,nchar(input$foto)-3, nchar(input$foto)) %in% c(".png",".jpg",".svg","jpeg", "JPEG")){
-          shinyalert::shinyalert(title = "¡Registre link válido!", text = "Debe tener alguna de las siguientes terminaciones: .png, .jpg, .svg, .jpeg o .JPEG")
+          shinyalert::shinyalert(title = "¡Registre un link válido!", text = "Debe tener alguna de las siguientes terminaciones: .png, .jpg, .svg, .jpeg o .JPEG")
+        } else{
+          if(mandatory){
+            withProgress(message = 'Espere un momento', value = 0, {
+              shinyjs::disable(id = "guardar")
+
+              reset <- c("nombre", "apellido_p", "apellido_m","foto","nacimiento","telefono", "influencia","asociado", "partido", "cargo", "descripcion")
+              if(usuario != "stecnico") reset <- reset %>% append("municipio")
+              reset %>%
+                purrr::walk(~shinyjs::reset(id = .x))
+
+              shiny::incProgress(amount = .4, detail = "Registrando")
+
+              usuario <- bd$usuarios %>% select(usuario, id_usuario) %>% filter(usuario == !!usuario) %>% pull(id_usuario)
+
+              tibble(
+                id_usuario = !!usuario,
+                nombre = input$nombre,
+                apellido_paterno = input$apellido_p,
+                apellido_materno = input$apellido_m,
+                foto = input$foto,
+                fecha_de_nacimiento = lubridate::ymd(input$nacimiento),
+                telefono = input$telefono,
+                cual_es_el_tipo_de_influencia = input$influencia,
+                zona_de_influencia = if_else(usuario == "stecnico", "Estatal", NA_character_),
+                municipio = if_else(usuario != "stecnico", paste(input$municipio, collapse = ", "), NA_character_),
+                partido = if_else(input$asociado, input$partido, NA_character_),
+                cargo = input$cargo,
+                descripcion = input$descripcion,
+                creado = lubridate::now(tz = "America/Mexico_City"),
+                activo = 1
+              ) %>% DBI::dbAppendTable(pool, tbl_actores, value = .)
+
+              if(usuario == 1){
+
+                a <- tbl(pool, tbl_actores) %>% collect() %>% sample_frac()
+                nuevo <- a %>% filter(id_actor == max(id_actor)) %>% pull(id_actor)
+                shiny::incProgress(amount = .5, detail = "Actualizando datos")
+                a %>% filter(id_actor != !!nuevo) %>%
+                  transmute(id_actor_1 = id_actor, id_actor_2 = nuevo, id_usuario,
+                            comparada = 0, creado = lubridate::now(tz = "America/Mexico_City")) %>%
+                  sample_frac() %>% DBI::dbWriteTable(pool, tbl_combinaciones,., append = T)
+
+                bd$combinaciones <- tbl(pool, tbl_combinaciones) %>%
+                  left_join(bd$usuarios %>% select(usuario, id_usuario))
+              } else{
+                a <- tbl(pool, tbl_actores) %>%
+                  filter(id_usuario %in% c(!!usuario, 1)) %>% collect() %>% sample_frac()
+
+                nuevo <- a %>% filter(id_actor == max(id_actor)) %>% pull(id_actor)
+
+                shiny::incProgress(amount = .5, detail = "Actualizando datos")
+
+                combn(a$id_actor,2) %>% t() %>% as_tibble %>% purrr::set_names(c("id_actor_1", "id_actor_2")) %>%
+                  filter(if_any(everything(), ~.x == !!nuevo)) %>%
+                  mutate(id_usuario = !!usuario, comparada = 0, creado = lubridate::now(tz = "America/Mexico_City")) %>%
+                  sample_frac() %>% DBI::dbWriteTable(pool, tbl_combinaciones,., append = T)
+
+                bd$combinaciones <- tbl(pool, tbl_combinaciones) %>%
+                  left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
+                  filter(id_usuario == !!usuario)
+              }
+
+              bd$actores <- tbl(pool, tbl_actores) %>% filter(activo == 1) %>% collect()
+
+              gargoyle::trigger("actualizar_combinaciones")
+
+              shinyjs::enable(id = "guardar")
+            })
+          } else{
+            shinyalert::shinyalert(title = "¡Alerta!", text = "Llene todos los campos")
+          }
+        }
+      } else{
+        if(mandatory){
+          withProgress(message = 'Espere un momento', value = 0, {
+            shinyjs::disable(id = "guardar")
+
+            reset <- c("nombre", "apellido_p", "apellido_m","foto","nacimiento","telefono", "influencia","asociado", "partido", "cargo", "descripcion")
+            if(usuario != "stecnico") reset <- reset %>% append("municipio")
+            reset %>%
+              purrr::walk(~shinyjs::reset(id = .x))
+
+            shiny::incProgress(amount = .4, detail = "Registrando")
+
+            usuario <- bd$usuarios %>% select(usuario, id_usuario) %>% filter(usuario == !!usuario) %>% pull(id_usuario)
+
+            tibble(
+              id_usuario = !!usuario,
+              nombre = input$nombre,
+              apellido_paterno = input$apellido_p,
+              apellido_materno = input$apellido_m,
+              foto = input$foto,
+              fecha_de_nacimiento = lubridate::ymd(input$nacimiento),
+              telefono = input$telefono,
+              cual_es_el_tipo_de_influencia = input$influencia,
+              zona_de_influencia = if_else(usuario == "stecnico", "Estatal", NA_character_),
+              municipio = if_else(usuario != "stecnico", paste(input$municipio, collapse = ", "), NA_character_),
+              partido = if_else(input$asociado, input$partido, NA_character_),
+              cargo = input$cargo,
+              descripcion = input$descripcion,
+              creado = lubridate::now(tz = "America/Mexico_City"),
+              activo = 1
+            ) %>% DBI::dbAppendTable(pool, tbl_actores, value = .)
+
+            if(usuario == 1){
+
+              a <- tbl(pool, tbl_actores) %>% collect() %>% sample_frac()
+              nuevo <- a %>% filter(id_actor == max(id_actor)) %>% pull(id_actor)
+              shiny::incProgress(amount = .5, detail = "Actualizando datos")
+              a %>% filter(id_actor != !!nuevo) %>%
+                transmute(id_actor_1 = id_actor, id_actor_2 = nuevo, id_usuario,
+                          comparada = 0, creado = lubridate::now(tz = "America/Mexico_City")) %>%
+                sample_frac() %>% DBI::dbWriteTable(pool, tbl_combinaciones,., append = T)
+
+              bd$combinaciones <- tbl(pool, tbl_combinaciones) %>%
+                left_join(bd$usuarios %>% select(usuario, id_usuario))
+            } else{
+              a <- tbl(pool, tbl_actores) %>%
+                filter(id_usuario %in% c(!!usuario, 1)) %>% collect() %>% sample_frac()
+
+              nuevo <- a %>% filter(id_actor == max(id_actor)) %>% pull(id_actor)
+
+              shiny::incProgress(amount = .5, detail = "Actualizando datos")
+
+              combn(a$id_actor,2) %>% t() %>% as_tibble %>% purrr::set_names(c("id_actor_1", "id_actor_2")) %>%
+                filter(if_any(everything(), ~.x == !!nuevo)) %>%
+                mutate(id_usuario = !!usuario, comparada = 0, creado = lubridate::now(tz = "America/Mexico_City")) %>%
+                sample_frac() %>% DBI::dbWriteTable(pool, tbl_combinaciones,., append = T)
+
+              bd$combinaciones <- tbl(pool, tbl_combinaciones) %>%
+                left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
+                filter(id_usuario == !!usuario)
+            }
+
+            bd$actores <- tbl(pool, tbl_actores) %>% filter(activo == 1) %>% collect()
+
+            gargoyle::trigger("actualizar_combinaciones")
+
+            shinyjs::enable(id = "guardar")
+          })
+        } else{
+          shinyalert::shinyalert(title = "¡Alerta!", text = "Llene todos los campos")
         }
       }
 
-      if(mandatory){
-        withProgress(message = 'Espere un momento', value = 0, {
-          shinyjs::disable(id = "guardar")
 
-          reset <- c("nombre", "apellido_p", "apellido_m","foto","nacimiento","telefono", "influencia","asociado", "partido", "cargo", "descripcion")
-          if(usuario != "stecnico") reset <- reset %>% append("municipio")
-          reset %>%
-            purrr::walk(~shinyjs::reset(id = .x))
-
-          shiny::incProgress(amount = .4, detail = "Registrando")
-
-          usuario <- bd$usuarios %>% select(usuario, id_usuario) %>% filter(usuario == !!usuario) %>% pull(id_usuario)
-
-          tibble(
-            id_usuario = !!usuario,
-            nombre = input$nombre,
-            apellido_paterno = input$apellido_p,
-            apellido_materno = input$apellido_m,
-            foto = input$foto,
-            fecha_de_nacimiento = lubridate::ymd(input$nacimiento),
-            telefono = input$telefono,
-            cual_es_el_tipo_de_influencia = input$influencia,
-            zona_de_influencia = if_else(usuario == "stecnico", "Estatal", NA_character_),
-            municipio = if_else(usuario != "stecnico", paste(input$municipio, collapse = ", "), NA_character_),
-            partido = if_else(input$asociado, input$partido, NA_character_),
-            cargo = input$cargo,
-            descripcion = input$descripcion,
-            creado = lubridate::now(tz = "America/Mexico_City"),
-            activo = 1
-          ) %>% DBI::dbAppendTable(pool, tbl_actores, value = .)
-
-          if(usuario == 1){
-
-            a <- tbl(pool, tbl_actores) %>% collect() %>% sample_frac()
-            nuevo <- a %>% filter(id_actor == max(id_actor)) %>% pull(id_actor)
-            shiny::incProgress(amount = .5, detail = "Actualizando datos")
-            a %>% filter(id_actor != !!nuevo) %>%
-              transmute(id_actor_1 = id_actor, id_actor_2 = nuevo, id_usuario,
-                        comparada = 0, creado = lubridate::now(tz = "America/Mexico_City")) %>%
-              sample_frac() %>% DBI::dbWriteTable(pool, tbl_combinaciones,., append = T)
-
-            bd$combinaciones <- tbl(pool, tbl_combinaciones) %>%
-              left_join(bd$usuarios %>% select(usuario, id_usuario))
-          } else{
-            a <- tbl(pool, tbl_actores) %>%
-              filter(id_usuario %in% c(!!usuario, 1)) %>% collect() %>% sample_frac()
-
-            nuevo <- a %>% filter(id_actor == max(id_actor)) %>% pull(id_actor)
-
-            shiny::incProgress(amount = .5, detail = "Actualizando datos")
-
-            combn(a$id_actor,2) %>% t() %>% as_tibble %>% purrr::set_names(c("id_actor_1", "id_actor_2")) %>%
-              filter(if_any(everything(), ~.x == !!nuevo)) %>%
-              mutate(id_usuario = !!usuario, comparada = 0, creado = lubridate::now(tz = "America/Mexico_City")) %>%
-              sample_frac() %>% DBI::dbWriteTable(pool, tbl_combinaciones,., append = T)
-
-            bd$combinaciones <- tbl(pool, tbl_combinaciones) %>%
-              left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
-              filter(id_usuario == !!usuario)
-          }
-
-          bd$actores <- tbl(pool, tbl_actores) %>% filter(activo == 1) %>% collect()
-
-          gargoyle::trigger("actualizar_combinaciones")
-
-          shinyjs::enable(id = "guardar")
-        })
-      } else{
-        shinyalert::shinyalert(title = "¡Alerta!", text = "Llene todos los campos")
-      }
 
 
     })
