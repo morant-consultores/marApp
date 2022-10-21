@@ -134,10 +134,10 @@ aux %>%
     sample_frac() %>% DBI::dbWriteTable(pool, "mar_combinaciones",., append = T)
 })
 
-tbl(pool, tbl_combinaciones) %>% count(id_usuario)
-
+tbl(pool, tbl_combinaciones) %>% count(comparada)
+DBI::dbExecute(pool,glue::glue("update {tbl_combinaciones} set comparada = '0'"))
 # comparaciones -----------------------------------------------------------
-# DBI::dbRemoveTable(pool, "mar_comparaciones")
+DBI::dbRemoveTable(pool, "mar_comparaciones")
 DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (
   id_comparacion INT AUTO_INCREMENT PRIMARY KEY,
   id_combinacion INT,

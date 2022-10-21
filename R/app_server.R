@@ -28,7 +28,7 @@ app_server <- function(input, output, session) {
   observeEvent(c(res_auth$user),{
     if(res_auth$user != "stecnico"){
       bd$actores <- bd$actores %>% left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
-        filter(usuario == !!res_auth$user) %>% collect()
+        filter(usuario %in% c("stecnico", !!res_auth$user)) %>% collect()
 
       bd$combinaciones <- bd$combinaciones %>% left_join(bd$usuarios %>% select(usuario, id_usuario)) %>%
         filter(usuario == !!res_auth$user)
