@@ -136,7 +136,7 @@ aux %>%
 })
 
 tbl(pool, tbl_combinaciones) %>% count(comparada)
-# DBI::dbExecute(pool,glue::glue("update {tbl_combinaciones} set comparada = '0'"))
+DBI::dbExecute(pool,glue::glue("update {tbl_combinaciones} set comparada = '0'"))
 # comparaciones -----------------------------------------------------------
 # DBI::dbRemoveTable(pool, "mar_comparaciones")
 DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (
