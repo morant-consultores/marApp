@@ -20,7 +20,7 @@ app_server <- function(input, output, session) {
 
   bd <- reactiveValues(
     actores = tbl(pool, tbl_actores) %>% filter(activo == 1),
-    combinaciones = tbl(pool, tbl_combinaciones),
+    combinaciones = tbl(pool, tbl_combinaciones) %>% filter(activo == 1),
     comparaciones = tbl(pool, tbl_comparaciones),
     usuarios = tbl(pool, tbl_usuarios)
   )

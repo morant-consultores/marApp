@@ -134,9 +134,10 @@ aux %>%
       mutate(id_usuario = .y, comparada = 0, creado = now(tz = "America/Mexico_City")) %>%
     sample_frac() %>% DBI::dbWriteTable(pool, "mar_combinaciones",., append = T)
 })
-
+# glue::glue("ALTER TABLE {tbl_combinaciones} ADD COLUMN activo TINYINT AFTER creado") %>% DBI::dbExecute(pool,.)
+# glue::glue("UPDATE {tbl_combinaciones} set activo = 1") %>% DBI::dbExecute(pool,.)
 tbl(pool, tbl_combinaciones) %>% count(comparada)
-DBI::dbExecute(pool,glue::glue("update {tbl_combinaciones} set comparada = '0'"))
+# DBI::dbExecute(pool,glue::glue("update {tbl_combinaciones} set comparada = '0'"))
 # comparaciones -----------------------------------------------------------
 # DBI::dbRemoveTable(pool, "mar_comparaciones")
 DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (

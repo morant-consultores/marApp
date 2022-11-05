@@ -25,10 +25,10 @@ app_ui <- function(request) {
                    tabName = "comparacion",
                    icon = icon("user-group")
           ),
-          menuItem("Registrar actor",
-                   tabName = "registrar",
-                   icon = icon("plus")
-          ),
+          # menuItem("Registrar actor",
+          #          tabName = "registrar",
+          #          icon = icon("plus")
+          # ),
           menuItem("Mapa de actores relevantes",
                    tabName = "mapa",
                    icon = icon("circle-nodes")

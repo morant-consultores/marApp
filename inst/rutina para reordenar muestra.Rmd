@@ -1,0 +1,57 @@
+---
+title: "Actualizar orden muestra (MAR)"
+author: "Emilio Morones"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(dbplyr)
+library(pool)
+library(lubridate)
+
+source("funciones/reordenar_muestra.R")
+
+pool <- pool::dbPool(
+  drv = RMariaDB::MariaDB(),
+  dbname = "db_gp",
+  host = 'mysql.cduzrgqgkfht.us-east-2.rds.amazonaws.com',
+  username = 'root',
+  password = '9Blw33caY',
+  port = 3306
+)
+
+tbl_usuarios <- "mar_usuarios"
+tbl_actores <- "mar_actores"
+tbl_combinaciones <- "mar_combinaciones"
+tbl_comparaciones <- "mar_comparaciones"
+
+
+fecha_inicio <- "2022-11-04 21:00:00"
+```
+
+```{r}
+usuarios <- tbl(pool, tbl_usuarios) %>% filter(activo == 1) %>% filter(id_usuario != 15) %>% collect()
+actores <- tbl(pool, tbl_actores) %>% filter(activo == 1) %>% collect()
+combinaciones <- tbl(pool, tbl_combinaciones) %>% filter(activo == 1) %>% collect()
+comparaciones <- tbl(pool, tbl_comparaciones) %>% collect()
+```
+
+```{r}
+if(fecha_inicio < now(tz = "America/Mexico_City")){
+res <- usuarios$id_usuario %>% reordenar
+res
+}
+```
+
+```{r}
+pool::poolClose(pool)
+```
+
