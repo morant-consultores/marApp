@@ -99,7 +99,7 @@ tbl(pool, tbl_actores) %>% count(id_usuario)
 
 # combinaciones -----------------------------------------------------------
 # DBI::dbRemoveTable(pool, "mar_combinaciones")
-DBI::dbExecute(pool, glue::glue("CREATE TABLE mar_combinaciones (
+DBI::dbExecute(pool, glue::glue("CREATE TABLE mar_combinaciones_prueba (
   id_combinacion INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT,
   id_actor_1 INT,
@@ -132,7 +132,7 @@ aux %>%
 
   combn(previo$id_actor,2) %>% t() %>% as_tibble %>% set_names(c("id_actor_1", "id_actor_2")) %>%
       mutate(id_usuario = .y, comparada = 0, creado = now(tz = "America/Mexico_City")) %>%
-    sample_frac() %>% DBI::dbWriteTable(pool, "mar_combinaciones",., append = T)
+    sample_frac() %>% DBI::dbWriteTable(pool, "mar_combinaciones_prueba",., append = T)
 })
 # glue::glue("ALTER TABLE {tbl_combinaciones} ADD COLUMN activo TINYINT AFTER creado") %>% DBI::dbExecute(pool,.)
 # glue::glue("UPDATE {tbl_combinaciones} set activo = 1") %>% DBI::dbExecute(pool,.)
@@ -140,7 +140,7 @@ tbl(pool, tbl_combinaciones) %>% count(comparada)
 # DBI::dbExecute(pool,glue::glue("update {tbl_combinaciones} set comparada = '0'"))
 # comparaciones -----------------------------------------------------------
 # DBI::dbRemoveTable(pool, "mar_comparaciones")
-DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones (
+DBI::dbExecute(pool, "CREATE TABLE mar_comparaciones_prueba (
   id_comparacion INT AUTO_INCREMENT PRIMARY KEY,
   id_combinacion INT,
   id_actor_1 INT,

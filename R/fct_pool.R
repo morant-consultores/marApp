@@ -21,8 +21,8 @@ shiny::onStop(function() {
 
 tbl_usuarios <- "mar_usuarios"
 tbl_actores <- "mar_actores"
-tbl_combinaciones <- "mar_combinaciones"
-tbl_comparaciones <- "mar_comparaciones"
+tbl_combinaciones <- "mar_combinaciones_prueba"
+tbl_comparaciones <- "mar_comparaciones_prueba"
 #
 # tbl(pool, tbl_usuarios)
 # tbl(pool, tbl_actores)
